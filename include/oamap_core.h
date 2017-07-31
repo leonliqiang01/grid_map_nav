@@ -61,6 +61,8 @@ public:
 	virtual bool BuildWithPolygons(std::vector<std::vector<OaMapPoint>>& _polygons, float size) = 0;
 	virtual bool Inflation(float size) = 0;
 	virtual std::shared_ptr<uint8_t> GetCharMap(void) = 0;
+	virtual std::shared_ptr<uint8_t> GetCharMapwithBoundary(void) = 0;
+	
 	virtual uint32_t GetSizeInCellsX(void)
 	{
 		return xs_;
@@ -76,6 +78,7 @@ public:
 	
 	virtual bool WorldToMap(const double wx, const double wy, double& mx, double& my) = 0;
 	virtual bool MapToWorld(const double mx, const double my, double& wx, double& wy) = 0;
+	virtual bool IsInsideBoundary(OaMapPoint& position) = 0;
 	virtual bool Intersect(OaMapPoint& start, OaMapPoint& end) = 0;
 protected:
 	const uint32_t xs_;
@@ -87,24 +90,30 @@ protected:
 class GlobalMap : public OaMapCore
 {
 public:
-	GlobalMap(uint32_t _xs, uint32_t _ys, float _resolution):
+	GlobalMap(uint32_t _xs, uint32_t _ys, float _resolution, float _origin_x=0, float _origin_y=0):
 		OaMapCore(_xs,_ys),
 		initialize_(false),
+		has_boundary_flag_(false),
 		map_name_("global_map"),
+		map_name_boundary_("global_map_boundary"),
 		map_resolution_(_resolution),		
-		map_({map_name_})
+		map_({map_name_, map_name_boundary_})
 	{
 		map_.setFrameId("map");
-		map_.setGeometry(grid_map::Length(xs_,ys_),map_resolution_);
+		map_.setGeometry(grid_map::Length(xs_,ys_),map_resolution_,grid_map::Position(_origin_x,_origin_y));
 		char_map_ = std::shared_ptr<uint8_t>(new uint8_t[ys_*xs_], [](uint8_t* p){delete[] p;});
-		map_["global_map"].setZero();
+		char_map_boundary_ = std::shared_ptr<uint8_t>(new uint8_t[ys_*xs_], [](uint8_t* p){delete[] p;});
+		map_[map_name_].setZero();
+		map_[map_name_boundary_].setZero();
 		memset(char_map_.get(), 0, sizeof(uint8_t)*xs_*ys_);
+		memset(char_map_boundary_.get(), 0, sizeof(uint8_t)*xs_*ys_);
 	}
 	virtual ~GlobalMap()
 	{}
 	virtual bool BuildWithPolygons(std::vector<std::vector<OaMapPoint>>& _polygons, float size);
 	virtual bool Inflation(float size){};
 	virtual std::shared_ptr<uint8_t> GetCharMap(void);
+	virtual std::shared_ptr<uint8_t> GetCharMapwithBoundary(void);
 	
 	virtual bool WorldToMap(const double wx, const double wy, double& mx, double& my);
 	virtual bool MapToWorld(const double mx, const double my, double& wx, double& wy);
@@ -124,17 +133,22 @@ public:
 		return map_;
 	}
 	
+	virtual bool IsInsideBoundary(OaMapPoint& position);
+	
 	virtual bool Intersect(OaMapPoint& start, OaMapPoint& end);
 protected:
-// 	std::vector<std::vector<OaMapPoint>> polygons_;
-	bool initialize_;
+	void DirectofEdge(OaMapPoint& position, OaMapPoint& start, OaMapPoint& end, 
+					  int& left_count, int& right_count);
+	bool              initialize_;
+	bool              has_boundary_flag_;
 	std::string       map_name_;
+	std::string       map_name_boundary_;
 	float 			  map_resolution_;
 	grid_map::GridMap map_;
+	std::vector<OaMapPoint> boundary_polygon_;
 	//用于存放map
 	std::shared_ptr<uint8_t> char_map_;
-
-
+	std::shared_ptr<uint8_t> char_map_boundary_;
 };
 }
 #endif

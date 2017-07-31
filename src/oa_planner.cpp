@@ -3,7 +3,7 @@
 
 namespace global_planner 
 {
-void OaPlanner::Initialize(std::shared_ptr< OaMapCore > _oa_map)
+void OaPlanner::Initialize(std::shared_ptr<OaMapCore>& _oa_map)
 {
 	if(!initialize_)
 	{
@@ -27,6 +27,11 @@ bool OaPlanner::MakePlan(OaMapPoint& start, OaMapPoint& goal, std::vector<OaMapP
 	double start_y = 0;
 	double goal_x  = 0;
 	double goal_y  = 0;
+	if(!initialize_)
+	{
+		std::cout << "The planner has not been initialized!" << std::endl;
+		return false;
+	}
 	
 	if(!oa_map_->WorldToMap(start.x(),start.y(),start_x,start_y)
 	|| !oa_map_->WorldToMap(goal.x(), goal.y(), goal_x, goal_y))
@@ -42,7 +47,23 @@ bool OaPlanner::MakePlan(OaMapPoint& start, OaMapPoint& goal, std::vector<OaMapP
     planner_->setSize(nx, ny);
     grid_path_->setSize(nx, ny);
     potential_array_ = new float[nx * ny];
-	std::shared_ptr<uint8_t> char_map = oa_map_->GetCharMap();
+	
+	std::shared_ptr<uint8_t> char_map;
+	//加入对是否考虑边界的判断！！！！！
+	if(!oa_map_->IsInsideBoundary(start) || !oa_map_->IsInsideBoundary(goal))
+	{
+		char_map = oa_map_->GetCharMap();
+	}
+	else
+	{
+		char_map = oa_map_->GetCharMapwithBoundary();
+	}
+	
+	if(!char_map)
+	{
+		std::cout << "Can not get the char map!" << std::endl;
+		return false;
+	}
 	
 	OutlineMap(char_map.get(), nx, ny, LETHAL_OBSTACLE);
 	
@@ -63,15 +84,25 @@ bool OaPlanner::MakePlan(OaMapPoint& start, OaMapPoint& goal, std::vector<OaMapP
         return false;
     }
 	
-	//将path转换为plan
+	//将path转换为plan,并将起始点和终止点修改为原有的起始点和终止点
 	for(auto index = path.rbegin(); index != path.rend(); index++)
 	{
-		std::pair<float, float> point = *index;
+		if(index == path.rbegin())
+		{
+			plan.push_back(start);
+			continue;
+		}
+		std::pair<float, float> point;
+		point = *index;
+
 		double path_x, path_y;
 		oa_map_->MapToWorld(point.first, point.second, path_x, path_y);
 		OaMapPoint plan_point(path_x, path_y);
 		plan.push_back(plan_point);
 	}
+	plan.pop_back();
+	plan.push_back(goal);
+	
 	PrunePlan(plan);
 	delete[] potential_array_;
 	return true;

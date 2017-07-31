@@ -17,7 +17,7 @@ public:
 	virtual ~BaseGlobalPlan(){}
 	
 	virtual bool MakePlan(OaMapPoint& start, OaMapPoint& goal, std::vector<OaMapPoint>& plan) = 0;
-	virtual void Initialize(std::shared_ptr<OaMapCore> _oa_map) = 0;
+	virtual void Initialize(std::shared_ptr<OaMapCore>& _oa_map) = 0;
 };
 
 class OaPlanner : public BaseGlobalPlan
@@ -30,7 +30,7 @@ public:
 	virtual ~OaPlanner()
 	{}
 	virtual bool MakePlan(OaMapPoint& start, OaMapPoint& goal, std::vector<OaMapPoint>& plan);
-	virtual void Initialize(std::shared_ptr<OaMapCore> _oa_map);
+	virtual void Initialize(std::shared_ptr<OaMapCore>& _oa_map);
 protected:
 	bool OutlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
 	bool PrunePlan(std::vector<OaMapPoint>& _plan);

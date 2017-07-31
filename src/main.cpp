@@ -47,21 +47,21 @@ int main( int argc, char** argv )
 	polygon3.push_back(OaMapPoint(25,7,0,2));
 	polygon3.push_back(OaMapPoint(22,12,0,2));
 	polygons.push_back(polygon3);
-// 	std::vector<OaMapPoint> polygon4;
-// 	polygon4.push_back(OaMapPoint(-5,-5,0,-1));
-// 	polygon4.push_back(OaMapPoint(50,-5,0,-1));
-// 	polygon4.push_back(OaMapPoint(50,40,0,-1));
+	std::vector<OaMapPoint> polygon4;
+	polygon4.push_back(OaMapPoint(-5,-5,0,-1));
+	polygon4.push_back(OaMapPoint(50,-5,0,-1));
+	polygon4.push_back(OaMapPoint(50,40,0,-1));
 // 	polygon4.push_back(OaMapPoint(30,40,0,-1));
 // 	polygon4.push_back(OaMapPoint(30,20,0,-1));
 // 	polygon4.push_back(OaMapPoint(15,20,0,-1));
 // 	polygon4.push_back(OaMapPoint(15,40,0,-1));
-// 	polygon4.push_back(OaMapPoint(-5,40,0,-1));
-// 	polygons.push_back(polygon4);
+	polygon4.push_back(OaMapPoint(-5,40,0,-1));
+	polygons.push_back(polygon4);
 
 	//要先进行起始点与末端点位置判断
-	OaMapPoint start(0,0);
-	OaMapPoint goal(35,15);
-	std::shared_ptr<GlobalMap> global_map_ = std::make_shared<GlobalMap>(700,700,1);
+	OaMapPoint start(0,30);
+	OaMapPoint goal(35,0);
+	std::shared_ptr<OaMapCore> global_map_ = std::make_shared<GlobalMap>(700,400,1,100,100);
 	std::shared_ptr<BaseGlobalPlan> oa_planner = std::make_shared<OaPlanner>();
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
@@ -70,7 +70,7 @@ int main( int argc, char** argv )
 	std::shared_ptr<uint8_t> map_char = global_map_->GetCharMap();
 	std::vector<OaMapPoint> plan;
 	oa_planner->MakePlan(start,goal,plan);
-	
+
 	std::cout << "The size of the plan is: " << plan.size() << std::endl;
 	
 // 	global_map_.Inflation(2);
@@ -150,7 +150,7 @@ int main( int argc, char** argv )
 		marker_pub.publish(line_string);
 		grid_map_msgs::GridMap message;
 		grid_map::Position goal_point(goal.x(),goal.y());
-		grid_map::GridMap mmap = global_map_->GetGridMap();
+		grid_map::GridMap mmap = dynamic_cast<GlobalMap*>(global_map_.get())->GetGridMap();
 		grid_map::Index goal_index;  
 		mmap.getIndex(goal_point, goal_index);
 		mmap.getPosition(goal_index, goal_point);
